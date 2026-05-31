@@ -3,8 +3,7 @@ using UnityEngine;
 public class Car : MonoBehaviour
 {
    [Header("Físicas y Gravedad")]
-    public Rigidbody carRB;           
-    public Transform centerOfMass;
+    public Rigidbody carRB;
    
 
    [Header("Wheel Colliders")]
@@ -32,17 +31,6 @@ public class Car : MonoBehaviour
     private float verticalInput;
     private float horizontalInput;
 
-
-    private void Start()
-    {
-        // Al iniciar, le decimos a Unity que baje el centro de gravedad
-        if (carRB != null && centerOfMass != null)
-        {
-            carRB.centerOfMass = centerOfMass.localPosition;
-        }
-    }
-
-
     private void FixedUpdate()
     {
         HandleMotor();
@@ -63,7 +51,7 @@ public class Car : MonoBehaviour
             // fuerza del motor a CERO
             wheelRL.motorTorque = 0f;
             wheelRR.motorTorque = 0f;
-            // 2. Aplicamos toda la fuerza de los frenos
+            // Aplicamos toda la fuerza de los frenos
             currentBrakeForce = brakeForce;
         }
         // Si no aceleramos ni frenamos (Freno de motor suave)
@@ -91,17 +79,16 @@ public class Car : MonoBehaviour
         wheelFR.brakeTorque = currentBrakeForce;
         wheelRL.brakeTorque = currentBrakeForce;
         wheelRR.brakeTorque = currentBrakeForce;
-    }
+}
 
     private void HandleSteering()
     {
         float horizontalInput = Input.GetAxis("Horizontal");
         
-        // 1. Calculamos la velocidad actual del auto
+        // Calculamos la velocidad actual del auto
         float speed = carRB.velocity.magnitude;
 
-        // 2. Creamos un reductor. Mientras más alta es la velocidad, mayor es el reductor.
-        // El "20f" es qué tan rápido empieza a endurecerse la dirección. (Puedes bajarlo a 15 o subirlo a 30 si quieres probar).
+        // Creamos un reductor. Mientras más alta es la velocidad, mayor es el reductor.
         float steeringReduction = 1f + (speed / 20f); 
 
         // 3. Dividimos el ángulo máximo por el reductor. 
