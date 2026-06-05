@@ -86,7 +86,7 @@ public class Car : MonoBehaviour
         float horizontalInput = Input.GetAxis("Horizontal");
         
         // Calculamos la velocidad actual del auto
-        float speed = carRB.velocity.magnitude;
+        float speed = carRB.linearVelocity.magnitude;
 
         // Creamos un reductor. Mientras más alta es la velocidad, mayor es el reductor.
         float steeringReduction = 1f + (speed / 20f); 
@@ -120,7 +120,7 @@ public class Car : MonoBehaviour
     private void AddDownforce()
     {
         // Aplasta el auto contra el piso multiplicando la fuerza por la velocidad actual
-        carRB.AddForce(-transform.up * downforce * carRB.velocity.magnitude);
+        carRB.AddForce(-transform.up * downforce * carRB.linearVelocity.magnitude);
     }
 
 }

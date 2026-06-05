@@ -27,7 +27,7 @@ public class CarStability : MonoBehaviour
     {
         // Aplicar Downforce basado en la velocidad
         // A mayor velocidad (magnitude), más fuerte lo empujamos contra el suelo (-transform.up)
-        float currentSpeed = carRigidbody.velocity.magnitude;
+        float currentSpeed = carRigidbody.linearVelocity.magnitude;
         
         // Usamos -transform.up para que empuje "hacia el piso del auto" incluso si está en una rampa
         carRigidbody.AddForce(-transform.up * downforceMultiplier * currentSpeed);

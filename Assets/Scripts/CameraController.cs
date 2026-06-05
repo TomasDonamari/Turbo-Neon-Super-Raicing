@@ -61,8 +61,8 @@ public class CameraController : MonoBehaviour
 
         if (carRigidbody != null)
         {
-            forwardSpeed = Vector3.Dot(carRigidbody.velocity, target.forward);
-            currentSpeed = carRigidbody.velocity.magnitude;
+            forwardSpeed = Vector3.Dot(carRigidbody.linearVelocity, target.forward);
+            currentSpeed = carRigidbody.linearVelocity.magnitude;
         }
 
       
