@@ -2,16 +2,14 @@ using UnityEngine;
 
 public class Car : MonoBehaviour
 {
-   [Header("Físicas y Gravedad")]
+    [Header("Físicas y Gravedad")]
     public Rigidbody carRB;
-   
 
-   [Header("Wheel Colliders")]
-   public WheelCollider wheelFL;
-   public WheelCollider wheelFR;
-   public WheelCollider wheelRL;
-   public WheelCollider wheelRR;
-
+    [Header("Wheel Colliders")]
+    public WheelCollider wheelFL;
+    public WheelCollider wheelFR;
+    public WheelCollider wheelRL;
+    public WheelCollider wheelRR;
 
     [Header("Wheel Transforms")]
     public Transform wheelFLTransform;
@@ -27,9 +25,19 @@ public class Car : MonoBehaviour
     private float downforce = 50f;
     private float currentSteerAngle;
     private float currentBrakeForce;
+    
+    // Estas variables ahora guardarán lo que el PlayerController (o la IA) les mande
     private bool isBraking;
     private float verticalInput;
     private float horizontalInput;
+
+    //El controlador externo llamará a esta función
+    public void SetInputs(float forward, float turn, bool brake)
+    {
+        verticalInput = forward;
+        horizontalInput = turn;
+        isBraking = brake;
+    }
 
     private void FixedUpdate()
     {
@@ -39,13 +47,9 @@ public class Car : MonoBehaviour
         AddDownforce();
     }
 
-
     private void HandleMotor()
     {
-        float verticalInput = Input.GetAxisRaw("Vertical");
-        isBraking = Input.GetKey(KeyCode.Space);
 
-        
         if (isBraking)
         {
             // fuerza del motor a CERO
@@ -73,26 +77,23 @@ public class Car : MonoBehaviour
         ApplyBraking();
     }
     
-        private void ApplyBraking()
+    private void ApplyBraking()
     {
         wheelFL.brakeTorque = currentBrakeForce;
         wheelFR.brakeTorque = currentBrakeForce;
         wheelRL.brakeTorque = currentBrakeForce;
         wheelRR.brakeTorque = currentBrakeForce;
-}
+    }
 
     private void HandleSteering()
     {
-        float horizontalInput = Input.GetAxis("Horizontal");
-        
         // Calculamos la velocidad actual del auto
         float speed = carRB.linearVelocity.magnitude;
 
         // Creamos un reductor. Mientras más alta es la velocidad, mayor es el reductor.
         float steeringReduction = 1f + (speed / 20f); 
 
-        // 3. Dividimos el ángulo máximo por el reductor. 
-        // Si vas lento, gira los 40 grados. Si vas rapidísimo, quizás solo gire 15 grados para no resbalar.
+        // Dividimos el ángulo máximo por el reductor y multiplicamos por el input recibido
         currentSteerAngle = (maxSteerAngle / steeringReduction) * horizontalInput;
 
         wheelFL.steerAngle = currentSteerAngle;
@@ -108,7 +109,6 @@ public class Car : MonoBehaviour
         wheelTransform.rotation = rot;
     }
     
- 
     private void UpdateWheels()
     {
         UpdateWheels(wheelFL, wheelFLTransform);
@@ -122,5 +122,4 @@ public class Car : MonoBehaviour
         // Aplasta el auto contra el piso multiplicando la fuerza por la velocidad actual
         carRB.AddForce(-transform.up * downforce * carRB.linearVelocity.magnitude);
     }
-
 }
