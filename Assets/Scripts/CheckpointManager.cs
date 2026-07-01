@@ -5,9 +5,10 @@ public class CheckpointManager : MonoBehaviour
     public int lap = 0; 
     public int nextCheckpoint = 0;
     private int maxCheckpointNumber = 0;
+    public int vueltasParaTerminar = 2;
+    public bool esJugador = false;
 
     private float tiempoUltimoCheckpoint = 0f;
-    //private float tiempoEspera = 1.5f;
 
     void Start()
     {
@@ -31,10 +32,6 @@ public class CheckpointManager : MonoBehaviour
     {
         if (other.CompareTag("Checkpoint"))
         {
-            //if (Time.time < tiempoUltimoCheckpoint + tiempoEspera) 
-            {
-                //return; // Ignora las ruedas traseras
-            }
 
             if (int.TryParse(other.gameObject.name, out int thisCPNumber))
             {
@@ -49,6 +46,10 @@ public class CheckpointManager : MonoBehaviour
                     {
                         lap++; 
                         Debug.Log($"<color=yellow>[VUELTA]</color> Tienes {lap} vueltas registradas.");
+                        if (lap >= vueltasParaTerminar && !esJugador)
+                        {
+                        RaceMonitor.AvisarIAFinalizo();
+                        }
                     }
 
                     nextCheckpoint++;

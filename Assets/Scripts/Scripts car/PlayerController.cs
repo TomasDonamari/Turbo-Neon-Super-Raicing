@@ -17,6 +17,7 @@ public class PlayerController : MonoBehaviour
     public GameObject panelFinCarrera;  // El panel UI que aparecerá al final
     
     private bool carreraTerminada = false;
+    public GameObject panelPerdiste;
 
     private void Awake()
     {
@@ -68,6 +69,11 @@ public class PlayerController : MonoBehaviour
             int vueltaMostrar = Mathf.Clamp(checkpointTracker.lap, 1, vueltasParaTerminar);
             textoVueltas.text = "Vuelta: " + vueltaMostrar.ToString() + " / " + vueltasParaTerminar; 
         }
+
+        if (RaceMonitor.primeraIATermino && !carreraTerminada)
+        {
+            PerderCarrera();
+        }
     }
 
     // Función que se ejecuta una sola vez al terminar
@@ -86,5 +92,25 @@ public class PlayerController : MonoBehaviour
     public void VolverAlMenu()
     {
         SceneManager.LoadScene("MenuPrincipal"); 
+    }
+
+    private void PerderCarrera()
+    {
+        carreraTerminada = true;
+
+        // Muestra el cartel
+             if (panelPerdiste != null) 
+        {
+        panelPerdiste.SetActive(true);
+        }
+
+    // Frena tu auto
+    carScript.SetInputs(0, 0, true); 
+    }
+
+    public void ReiniciarCarrera()
+    {
+        // Recarga la escena actual en la que estás jugando
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name); 
     }
 }

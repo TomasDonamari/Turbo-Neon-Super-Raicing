@@ -7,16 +7,20 @@ public class RaceMonitor : MonoBehaviour
     
     // Esta variable sigue siendo static, lo cual es útil, pero la reiniciaremos manualmente
     public static bool racing = false;
+    public static bool primeraIATermino = false;
     
-    // --- SOLUCIÓN: Agregamos Awake ---
     private void Awake()
     {
         // Al cargar la escena, forzamos a que la carrera empiece pausada.
         // Esto garantiza que la IA y el Jugador esperen la cuenta regresiva.
         racing = false; 
+        primeraIATermino = false;
     }
-    // ---------------------------------
-
+    
+    public static void AvisarIAFinalizo()
+        {
+            primeraIATermino = true;
+        }
     void Start()
     {
         foreach (GameObject g in countDownItems)
@@ -35,8 +39,7 @@ public class RaceMonitor : MonoBehaviour
             yield return new WaitForSeconds(1);
             g.SetActive(false);
         }
-        
-        // ¡La carrera comienza ahora para todos al mismo tiempo!
+        // La carrera comienza ahora para todos al mismo tiempo
         racing = true;
     }
 }
