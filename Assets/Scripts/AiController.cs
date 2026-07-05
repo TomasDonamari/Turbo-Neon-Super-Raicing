@@ -7,19 +7,25 @@ public class AiController : MonoBehaviour
     public Circuit circuit;
     Car car;
     
-    // Variable para guardar la referencia al manager de checkpoints
     private CheckpointManager checkpointTracker; 
 
     public float steerSensitivity = 0.1f;
     Vector3 target;
     int currentWayPoint = 0;
+
+    //  VARIABLES PARA EL RESPAWN 
+    private float lastTimeMoving = 0f;
+    private Vector3 posicionInicial;
+    private Quaternion rotacionInicial;
     
     void Start()
     {
         car = this.GetComponent<Car>();
-        
-        // Al iniciar, buscamos el CheckpointManager adjunto a este mismo auto
         checkpointTracker = GetComponent<CheckpointManager>(); 
+        
+        // Guardamos posición inicial por si falla todo
+        posicionInicial = transform.position;
+        rotacionInicial = transform.rotation;
         
         target = circuit.wayPoints[currentWayPoint].transform.position;
     }
@@ -28,12 +34,10 @@ public class AiController : MonoBehaviour
     {
         if (RaceMonitor.racing == false) return;
         
-        // EJEMPLO DE USO: Si la IA ya completó 3 vueltas (la carrera terminó)
         if (checkpointTracker.lap >= 2)
         {
-            // Le decimos al auto que deje de acelerar, no doble y pise el freno a fondo
             car.SetInputs(0f, 0f, true);
-            return; // Cortamos la ejecución del Update para que no siga buscando waypoints
+            return; 
         }
 
         Vector3 localTarget = car.transform.InverseTransformPoint(target);
@@ -43,47 +47,34 @@ public class AiController : MonoBehaviour
         float localForwardVelocity = car.transform.InverseTransformDirection(car.carRB.linearVelocity).z;
         float steer = Mathf.Clamp(targetAngle * steerSensitivity, -1f, 1f) * Mathf.Sign(localForwardVelocity);
         
-        // Waypoint actual al que nos dirigimos
         Transform currentWP = circuit.wayPoints[currentWayPoint].transform;
-        
-        // Buscamos el script "WaypointSettings" en el waypoint actual
         WaypointsSettings wpSettings = currentWP.GetComponent<WaypointsSettings>();
 
-        // Valores por defecto
         float acceleration = 0.5f;
         bool isBraking = false;
 
-        // Si el waypoint tiene el script, usamos sus valores personalizados
         if (wpSettings != null)
         {
-            // Tomamos la aceleración ideal para este tramo
             acceleration = wpSettings.targetAcceleration;
 
-            // Revisamos si esta curva en particular necesita que toquemos el freno
             if (wpSettings.requiresBraking && distanceToTarget < wpSettings.brakingDistance)
             {
                 isBraking = true;
                 acceleration = 0.1f; 
             }
             
-            // 4. OTRO EJEMPLO: Si es la última vuelta (vuelta 2, ya que empieza en 0), la IA acelera más
             if (checkpointTracker.lap == 2)
             {
-                acceleration += 0.2f; // Le damos un "boost" de desesperación
+                acceleration += 0.2f; 
             }
         }
         else 
         {
-            // Comportamiento viejo de respaldo por si no hay script
             if (distanceToTarget < 10f) acceleration = 0.2f;
         }
 
-        // ---------------------------------------------
-
-        // Enviamos las instrucciones al motor del auto
         car.SetInputs(acceleration, steer, isBraking);
 
-        // Cambio al siguiente waypoint
         if (distanceToTarget < 6f) 
         {
             currentWayPoint++;
@@ -93,5 +84,61 @@ public class AiController : MonoBehaviour
             }
             target = circuit.wayPoints[currentWayPoint].transform.position;
         }
+
+        
+        // --- LÓGICA DE RESPAWN DE LA IA ---
+        
+        // Chequeamos si el auto se está moviendo usando linearVelocity 
+        if (car.carRB.linearVelocity.magnitude > 1f)
+        {
+            lastTimeMoving = Time.time;
+        }
+
+        // Si pasaron 4 segundos estancado
+        if (Time.time > lastTimeMoving + 4f)
+        {
+            // Teletransportamos al último checkpoint (o al inicio)
+            if (checkpointTracker.ultimoWaypoint != null)
+            {
+                transform.position = checkpointTracker.ultimoWaypoint.position;
+                transform.rotation = checkpointTracker.ultimoWaypoint.rotation;
+            }
+            else
+            {
+                transform.position = posicionInicial;
+                transform.rotation = rotacionInicial;
+            }
+            
+            // Frenamos el auto para limpiarle la inercia
+            car.carRB.linearVelocity = Vector3.zero;
+            car.carRB.angularVelocity = Vector3.zero;
+
+            // Recalculamos el target para que no intente volver atrás
+            ActualizarTargetMasCercano();
+
+            lastTimeMoving = Time.time; 
+        }
+    }
+
+    // FUNCIÓN PARA REUBICAR A LA IA EN SU RUTA 
+    private void ActualizarTargetMasCercano()
+    {
+        float minimaDistancia = Mathf.Infinity;
+        int indiceMasCercano = 0;
+
+        // Buscamos cuál es el waypoint del circuito que está más cerca de donde reaparecimos
+        for (int i = 0; i < circuit.wayPoints.Length; i++)
+        {
+            float distancia = Vector3.Distance(transform.position, circuit.wayPoints[i].transform.position);
+            if (distancia < minimaDistancia)
+            {
+                minimaDistancia = distancia;
+                indiceMasCercano = i;
+            }
+        }
+
+        // Asignamos ese waypoint como el nuevo objetivo inmediato
+        currentWayPoint = indiceMasCercano;
+        target = circuit.wayPoints[currentWayPoint].transform.position;
     }
 }

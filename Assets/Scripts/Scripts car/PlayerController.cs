@@ -3,41 +3,48 @@ using TMPro;
 using UnityEngine.SceneManagement; 
 
 [RequireComponent(typeof(Car))]
-[RequireComponent(typeof(CheckpointManager))] 
+[RequireComponent(typeof(CheckpointManager))]
+[RequireComponent(typeof(Rigidbody))] 
 public class PlayerController : MonoBehaviour
 {
     private Car carScript;
-    private CheckpointManager checkpointTracker; 
-    
+    private CheckpointManager checkpointTracker;
+    private Rigidbody rb; 
+
+    float lastTimeMoving = 0; 
     public TextMeshProUGUI textoVueltas; 
 
-    // VARIABLES PARA EL FIN DE CARRERA
     [Header("Configuración de Carrera")]
-    public int vueltasParaTerminar = 2; // Cantidad de vueltas totales
-    public GameObject panelFinCarrera;  // El panel UI que aparecerá al final
+    public int vueltasParaTerminar = 2; 
+    public GameObject panelFinCarrera;  
     
     private bool carreraTerminada = false;
     public GameObject panelPerdiste;
+
+    // Guardamos una posición inicial de respaldo por si acaso
+    private Vector3 posicionInicial;
+    private Quaternion rotacionInicial;
 
     private void Awake()
     {
         carScript = GetComponent<Car>();
         checkpointTracker = GetComponent<CheckpointManager>(); 
+        rb = GetComponent<Rigidbody>(); 
     }
 
     private void Start()
     {
-        // Nos aseguramos de que la pantalla final esté oculta al empezar a jugar
         if (panelFinCarrera != null)
         {
             panelFinCarrera.SetActive(false);
         }
+
+        posicionInicial = transform.position;
+        rotacionInicial = transform.rotation;
     }
 
     private void Update()
     {
-        // Como 'lap' suma 1 en la largada, para hacer 2 vueltas físicas 'lap' debe llegar a 3.
-        // Por lo tanto, si pedimos 2 vueltas, terminamos cuando lap > 2.
         if (checkpointTracker.lap > vueltasParaTerminar && !carreraTerminada)
         {
             TerminarCarrera();
@@ -48,7 +55,6 @@ public class PlayerController : MonoBehaviour
         float turnInput = 0f;
         bool brakeInput = false;
 
-        // Solo se puede manejar si la carrera empezó Y no ha terminado
         if (RaceMonitor.racing && !carreraTerminada) 
         {
             forwardInput = Input.GetAxisRaw("Vertical");
@@ -57,7 +63,6 @@ public class PlayerController : MonoBehaviour
         }
         else if (carreraTerminada)
         {
-            // Si la carrera terminó, clavamos los frenos para que el auto no siga de largo
             brakeInput = true; 
         }
 
@@ -65,7 +70,6 @@ public class PlayerController : MonoBehaviour
 
         if (textoVueltas != null && checkpointTracker != null && !carreraTerminada)
         {
-            // Mathf.Clamp evita que en la pantalla diga "Vuelta 3 / 2" justo antes de cambiar de escena
             int vueltaMostrar = Mathf.Clamp(checkpointTracker.lap, 1, vueltasParaTerminar);
             textoVueltas.text = "Vuelta: " + vueltaMostrar.ToString() + " / " + vueltasParaTerminar; 
         }
@@ -74,21 +78,47 @@ public class PlayerController : MonoBehaviour
         {
             PerderCarrera();
         }
-    }
 
-    // Función que se ejecuta una sola vez al terminar
-    private void TerminarCarrera()
-    {
-        carreraTerminada = true;
-        
-        // Activamos el panel gráfico
-        if (panelFinCarrera != null)
+        // --- LÓGICA DE RESPAWN POR WAYPOINT ---
+
+        // 1. Chequeamos si el auto se está moviendo
+        if (rb.velocity.magnitude > 1f || !RaceMonitor.racing)
         {
-            panelFinCarrera.SetActive(true);
+            lastTimeMoving = Time.time;
+        }
+
+        // 2. Si pasaron 4 segundos estancado
+        if (Time.time > lastTimeMoving + 4f)
+        {
+            // Le pedimos la posición al último waypoint cruzado
+            // NOTA: Acá asumo que tu CheckpointManager tiene una variable llamada "ultimoWaypoint"
+            if (checkpointTracker.ultimoWaypoint != null)
+            {
+                transform.position = checkpointTracker.ultimoWaypoint.position;
+                transform.rotation = checkpointTracker.ultimoWaypoint.rotation;
+            }
+            else
+            {
+                // Si por alguna razón todavía no cruzó ningún waypoint, lo mandamos al inicio
+                transform.position = posicionInicial;
+                transform.rotation = rotacionInicial;
+            }
+            
+            // Frenamos el auto para que no salga volando por la inercia anterior
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+
+            // Reseteamos el contador
+            lastTimeMoving = Time.time; 
         }
     }
 
-    // FUNCIÓN PÚBLICA PARA EL BOTÓN
+    private void TerminarCarrera()
+    {
+        carreraTerminada = true;
+        if (panelFinCarrera != null) panelFinCarrera.SetActive(true);
+    }
+
     public void VolverAlMenu()
     {
         SceneManager.LoadScene("MenuPrincipal"); 
@@ -97,20 +127,12 @@ public class PlayerController : MonoBehaviour
     private void PerderCarrera()
     {
         carreraTerminada = true;
-
-        // Muestra el cartel
-             if (panelPerdiste != null) 
-        {
-        panelPerdiste.SetActive(true);
-        }
-
-    // Frena tu auto
-    carScript.SetInputs(0, 0, true); 
+        if (panelPerdiste != null) panelPerdiste.SetActive(true);
+        carScript.SetInputs(0, 0, true); 
     }
 
     public void ReiniciarCarrera()
     {
-        // Recarga la escena actual en la que estás jugando
         SceneManager.LoadScene(SceneManager.GetActiveScene().name); 
     }
 }

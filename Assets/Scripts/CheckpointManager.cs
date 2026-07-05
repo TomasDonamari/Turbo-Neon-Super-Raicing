@@ -10,6 +10,9 @@ public class CheckpointManager : MonoBehaviour
 
     private float tiempoUltimoCheckpoint = 0f;
 
+    // Guarda la ubicación del último checkpoint válido
+    public Transform ultimoWaypoint; 
+
     void Start()
     {
         GameObject[] checkpoints = GameObject.FindGameObjectsWithTag("Checkpoint");
@@ -24,7 +27,7 @@ public class CheckpointManager : MonoBehaviour
             }
         }
         
-        // MENSAJE INICIAL
+        
         Debug.Log($"<color=cyan>[INICIO]</color> Encontré {checkpoints.Length} checkpoints. El número máximo en la pista es el {maxCheckpointNumber}");
     }
 
@@ -32,12 +35,15 @@ public class CheckpointManager : MonoBehaviour
     {
         if (other.CompareTag("Checkpoint"))
         {
-
             if (int.TryParse(other.gameObject.name, out int thisCPNumber))
             {
+                // Si el auto cruza el checkpoint que le tocaba...
                 if (thisCPNumber == nextCheckpoint)
                 {
                     tiempoUltimoCheckpoint = Time.time;
+                    
+                    //GUARDAMOS EL TRANSFORM DEL CHECKPOINT
+                    ultimoWaypoint = other.transform; 
                     
                     // MENSAJE DE ÉXITO
                     Debug.Log($"<color=green>[BIEN]</color> Cruzaste el Checkpoint {thisCPNumber}");
@@ -48,7 +54,7 @@ public class CheckpointManager : MonoBehaviour
                         Debug.Log($"<color=yellow>[VUELTA]</color> Tienes {lap} vueltas registradas.");
                         if (lap >= vueltasParaTerminar && !esJugador)
                         {
-                        RaceMonitor.AvisarIAFinalizo();
+                            RaceMonitor.AvisarIAFinalizo();
                         }
                     }
 
@@ -61,7 +67,7 @@ public class CheckpointManager : MonoBehaviour
                 }
                 else 
                 {
-                    // MENSAJE DE ERROR (Aquí estará el problema)
+                    // MENSAJE DE ERROR
                     Debug.LogWarning($"<color=red>[ERROR]</color> Tocaste el Checkpoint {thisCPNumber}, pero el sistema estaba esperando que toques el {nextCheckpoint}");
                 }
             }
