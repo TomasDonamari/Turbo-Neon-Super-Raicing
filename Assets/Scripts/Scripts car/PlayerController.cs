@@ -21,6 +21,13 @@ public class PlayerController : MonoBehaviour
     private bool carreraTerminada = false;
     public GameObject panelPerdiste;
 
+
+    [Header("Controles Móviles")]
+    public float aceleracionMovil = 0f;
+    public float direccionMovil = 0f;
+    public bool frenoMovil = false;
+    // --------------------------------
+
     // Guardamos una posición inicial de respaldo por si acaso
     private Vector3 posicionInicial;
     private Quaternion rotacionInicial;
@@ -57,9 +64,11 @@ public class PlayerController : MonoBehaviour
 
         if (RaceMonitor.racing && !carreraTerminada) 
         {
-            forwardInput = Input.GetAxisRaw("Vertical");
-            turnInput = Input.GetAxis("Horizontal");
-            brakeInput = Input.GetKey(KeyCode.Space);
+            // Si el botón táctil se está usando, toma ese valor. Si no, usa el teclado.
+            forwardInput = aceleracionMovil != 0f ? aceleracionMovil : Input.GetAxisRaw("Vertical");
+            turnInput = direccionMovil != 0f ? direccionMovil : Input.GetAxis("Horizontal");
+            brakeInput = frenoMovil || Input.GetKey(KeyCode.Space);
+            // ---------------------------------------------
         }
         else if (carreraTerminada)
         {
@@ -81,17 +90,15 @@ public class PlayerController : MonoBehaviour
 
         // --- LÓGICA DE RESPAWN POR WAYPOINT ---
 
-        // 1. Chequeamos si el auto se está moviendo
+        // Chequeamos si el auto se está moviendo
         if (rb.velocity.magnitude > 1f || !RaceMonitor.racing)
         {
             lastTimeMoving = Time.time;
         }
 
-        // 2. Si pasaron 4 segundos estancado
+        // Si pasaron 4 segundos estancado
         if (Time.time > lastTimeMoving + 4f)
         {
-            // Le pedimos la posición al último waypoint cruzado
-            // NOTA: Acá asumo que tu CheckpointManager tiene una variable llamada "ultimoWaypoint"
             if (checkpointTracker.ultimoWaypoint != null)
             {
                 transform.position = checkpointTracker.ultimoWaypoint.position;
@@ -99,16 +106,13 @@ public class PlayerController : MonoBehaviour
             }
             else
             {
-                // Si por alguna razón todavía no cruzó ningún waypoint, lo mandamos al inicio
                 transform.position = posicionInicial;
                 transform.rotation = rotacionInicial;
             }
             
-            // Frenamos el auto para que no salga volando por la inercia anterior
             rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
 
-            // Reseteamos el contador
             lastTimeMoving = Time.time; 
         }
     }
