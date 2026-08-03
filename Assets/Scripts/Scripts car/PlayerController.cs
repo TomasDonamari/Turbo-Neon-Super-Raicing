@@ -91,7 +91,7 @@ public class PlayerController : MonoBehaviour
         // --- LÓGICA DE RESPAWN POR WAYPOINT ---
 
         // Chequeamos si el auto se está moviendo
-        if (rb.velocity.magnitude > 1f || !RaceMonitor.racing)
+        if (rb.linearVelocity.magnitude > 1f || !RaceMonitor.racing)
         {
             lastTimeMoving = Time.time;
         }
@@ -110,7 +110,7 @@ public class PlayerController : MonoBehaviour
                 transform.rotation = rotacionInicial;
             }
             
-            rb.velocity = Vector3.zero;
+            rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
 
             lastTimeMoving = Time.time; 
